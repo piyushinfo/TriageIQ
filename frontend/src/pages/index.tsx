@@ -199,6 +199,20 @@ export default function LandingPage() {
                   Try Triage Now
                 </Link>
               </motion.div>
+              
+              {/* Developer Badge */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+                className="mt-12 inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl glass border border-white/5 hover:border-teal-500/30 transition-colors shadow-lg group cursor-default"
+              >
+                <span className="text-gray-400 text-sm">Developed by</span>
+                <span className="bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent font-bold tracking-wide group-hover:drop-shadow-[0_0_8px_rgba(45,212,191,0.5)] transition-all">
+                  Piyush Sharma
+                </span>
+                <Sparkles size={14} className="text-teal-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </motion.div>
             </motion.div>
 
             {/* Scroll indicator */}
@@ -339,7 +353,7 @@ export default function LandingPage() {
               <span>TriageIQ — AI-Powered Intelligent Triage</span>
             </div>
             <div>
-              Built with ❤️ at HackCrux 2026 — LNMIIT, Jaipur | Syntax Squad 07
+              Built with ❤️ at HackCrux 2026 — LNMIIT, Jaipur | Syntax Squad 07 | Developed by Piyush Sharma
             </div>
             <div className="flex items-center gap-1 text-yellow-600">
               ⚠️ Advisory only — not for clinical use
