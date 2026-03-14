@@ -339,7 +339,7 @@ export default function LandingPage() {
               <span>TriageIQ — AI-Powered Intelligent Triage</span>
             </div>
             <div>
-              Built with ❤️ at HackCrux 2026 — LNMIIT, Jaipur | Syntax Squad 07 | Developed by <a href="https://github.com/piyushinfo" target="_blank" rel="noreferrer" className="text-teal-400 hover:text-cyan-400 transition-colors font-medium">Piyush Sharma</a>
+              Built with ❤️ at HackCrux 2026 — LNMIIT, Jaipur | Developed by <a href="https://github.com/piyushinfo" target="_blank" rel="noreferrer" className="text-teal-400 hover:text-cyan-400 transition-colors font-medium">Piyush Sharma</a>
             </div>
             <div className="flex items-center gap-1 text-yellow-600">
               ⚠️ Advisory only — not for clinical use
