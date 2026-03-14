@@ -190,7 +190,7 @@ export default function NewCasePage() {
     try {
       const res = await triageAPI.analyzeNote(text);
       setResult(res.data);
-      setCurrentStage(PIPELINE_STAGES.length - 1);
+      setCurrentStage(PIPELINE_STAGES.length);
     } catch (e: any) {
       // Demo fallback
       setResult({
@@ -206,7 +206,7 @@ export default function NewCasePage() {
         timestamp: new Date().toISOString(),
         processing_time_ms: 2500,
       });
-      setCurrentStage(PIPELINE_STAGES.length - 1);
+      setCurrentStage(PIPELINE_STAGES.length);
     }
 
     setLoading(false);
@@ -473,7 +473,9 @@ export default function NewCasePage() {
                         <div
                           className={`flex items-center gap-3 transition-all duration-300 ${
                             isDone
-                              ? "text-teal-400"
+                              ? i === PIPELINE_STAGES.length - 1
+                                ? "text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.5)] font-bold"
+                                : "text-teal-400"
                               : isActive
                               ? "text-cyan-400"
                               : "text-gray-600"
