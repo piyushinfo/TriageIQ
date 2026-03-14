@@ -1,0 +1,42 @@
+[
+  {
+    "id": "PT-001",
+    "note": "65-year-old male presenting with sudden onset chest pain radiating to left arm, started 2 hours ago. Patient reports shortness of breath, diaphoresis, and nausea. History of hypertension and type 2 diabetes. BP 160/100 mmHg, HR 110 bpm, SpO2 92%. Currently on metformin and amlodipine. No known drug allergies.",
+    "expected_urgency": "critical"
+  },
+  {
+    "id": "PT-002",
+    "note": "28-year-old female, 32 weeks pregnant, presenting with severe headache and blurred vision for the past 3 hours. BP 155/105 mmHg. Denies chest pain or shortness of breath. No previous pregnancy complications. Fetal movements normal. Urine dipstick shows 2+ protein.",
+    "expected_urgency": "critical"
+  },
+  {
+    "id": "PT-003",
+    "note": "45-year-old male with 3-day history of high fever (39.5°C), productive cough with yellow sputum, and increasing shortness of breath. History of asthma. HR 102 bpm, RR 22 breaths/min, SpO2 94% on room air. Lives alone, unable to manage at home.",
+    "expected_urgency": "high"
+  },
+  {
+    "id": "PT-004",
+    "note": "32-year-old female presenting with sudden severe headache described as 'worst headache of my life', onset 1 hour ago during exercise. No prior similar episodes. Neck stiffness present. Photophobia noted. Vomited once. Neurologically intact on initial assessment.",
+    "expected_urgency": "critical"
+  },
+  {
+    "id": "PT-005",
+    "note": "19-year-old male, bee sting 30 minutes ago. Developing hives over trunk and arms. Reports throat tightening and difficulty swallowing. Known bee allergy but forgot epipen. BP 95/60 mmHg, HR 120 bpm. Mild wheezing on auscultation.",
+    "expected_urgency": "critical"
+  },
+  {
+    "id": "PT-006",
+    "note": "55-year-old female with 2-day history of right lower abdominal pain, now severe. Nausea and two episodes of vomiting. Low-grade fever 38.1°C. Rebound tenderness present on examination. Last bowel movement 3 days ago. WBC elevated.",
+    "expected_urgency": "high"
+  },
+  {
+    "id": "PT-007",
+    "note": "40-year-old male with moderate lower back pain for 5 days after lifting heavy objects at work. Pain is 6/10 at rest, worsens with movement. No radiation to legs. No bowel or bladder symptoms. No history of trauma. Has been taking ibuprofen with partial relief.",
+    "expected_urgency": "medium"
+  },
+  {
+    "id": "PT-008",
+    "note": "25-year-old female with sore throat, mild fever 37.8°C, and runny nose for 3 days. No difficulty swallowing. No rash. Vaccinations up to date. Has been managing with paracetamol. Requests prescription for antibiotics.",
+    "expected_urgency": "low"
+  }
+]
