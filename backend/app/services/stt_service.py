@@ -30,7 +30,8 @@ async def transcribe_audio(audio_bytes: bytes, filename: str = "audio.webm") -> 
             tmp_path = tmp.name
 
         with open(tmp_path, "rb") as audio_file:
-            response = await client.audio.transcriptions.create(
+            # We use translations.create to force the output to be English, enabling multi-lingual input
+            response = await client.audio.translations.create(
                 model=STT_MODEL,
                 file=audio_file,
                 response_format="verbose_json",

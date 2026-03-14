@@ -91,6 +91,27 @@ export default function DashboardPage() {
             pendingCount={pendingCount}
           />
 
+          {/* Hospital Capacity Mock */}
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mb-8 grid grid-cols-2 md:grid-cols-4 gap-4"
+          >
+            <div className="glass-subtle p-4 rounded-xl border border-white/5 flex flex-col gap-1">
+              <span className="text-xs text-gray-400 uppercase tracking-widest font-semibold flex items-center gap-1"><Clock size={12}/> ER Wait Time</span>
+              <span className="text-xl font-bold text-white">45 min</span>
+            </div>
+            <div className="glass-subtle p-4 rounded-xl border border-orange-500/20 flex flex-col gap-1">
+              <span className="text-xs text-orange-400 uppercase tracking-widest font-semibold flex items-center gap-1"><User size={12}/> Beds Available</span>
+              <span className="text-xl font-bold text-orange-400">3 / 20</span>
+            </div>
+            <div className="glass-subtle p-4 rounded-xl border border-white/5 flex flex-col gap-1 md:col-span-2 bg-teal-500/5 py-3 justify-center">
+              <span className="text-xs text-teal-400 uppercase tracking-widest font-semibold flex items-center gap-1 mb-1"><AlertCircle size={12}/> System Protocol</span>
+              <span className="text-sm font-medium text-teal-300">High volume mode active. AI-flagged Critical cases bypass standard triage sequence and jump the queue.</span>
+            </div>
+          </motion.div>
+
           {/* Main Layout */}
           <div className="flex flex-col lg:flex-row gap-5">
             {/* ── Left: Case Queue ────────────── */}

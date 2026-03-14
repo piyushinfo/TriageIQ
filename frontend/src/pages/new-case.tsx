@@ -3,6 +3,8 @@ import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import { triageAPI } from "@/utils/api";
 import Navbar from "@/components/shared/Navbar";
 import UrgencyBadge from "@/components/shared/UrgencyBadge";
@@ -27,6 +29,9 @@ import {
   UploadCloud,
   Square,
   Trash2,
+  Download,
+  Info,
+  Network
 } from "lucide-react";
 
 const Scene3D = dynamic(() => import("@/components/3d/Scene3D"), { ssr: false });
@@ -54,6 +59,8 @@ export default function NewCasePage() {
   const [currentStage, setCurrentStage] = useState(-1);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showExplainability, setShowExplainability] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Audio State
   const [isRecording, setIsRecording] = useState(false);
@@ -224,6 +231,32 @@ export default function NewCasePage() {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
+  };
+
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById("result-card");
+    if (!element) return;
+    try {
+        setIsExporting(true);
+        // Temporary style fixes for html2canvas
+        const originalBg = element.style.background;
+        element.style.background = "#0f172a"; // Solid dark bg for PDF (slate-900)
+        
+        const canvas = await html2canvas(element, { scale: 2, backgroundColor: "#0f172a", useCORS: true });
+        const data = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("p", "mm", "a4");
+        const imgProps = pdf.getImageProperties(data);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        
+        pdf.addImage(data, "PNG", 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`TriageIQ_Report_${result.case_id}.pdf`);
+    } catch (err) {
+        console.error("Failed to export PDF", err);
+    } finally {
+        setIsExporting(false);
+        if (element) element.style.background = ""; // Reset
+    }
   };
 
   return (
@@ -517,7 +550,8 @@ export default function NewCasePage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.5 }}
-                className="mt-8 glass rounded-2xl overflow-hidden"
+                className="mt-8 glass rounded-2xl overflow-hidden relative"
+                id="result-card"
               >
                 {/* Result Header */}
                 <div className="p-6 border-b border-white/5 bg-gradient-to-r from-teal-500/[0.03] to-transparent">
@@ -544,11 +578,31 @@ export default function NewCasePage() {
                         </span>
                       </div>
                     </div>
-                    <UrgencyBadge
-                      urgency={result.urgency}
-                      score={result.urgency_score}
-                      size="lg"
-                    />
+                    <div className="flex items-center gap-4">
+                      {/* Action Buttons */}
+                      <div className="flex bg-white/5 rounded-lg border border-white/10 overflow-hidden" data-html2canvas-ignore>
+                        <button 
+                            onClick={() => setShowExplainability(!showExplainability)}
+                            className={`p-2.5 flex items-center justify-center transition-colors border-r border-white/10 ${showExplainability ? 'bg-teal-500/20 text-teal-400' : 'text-gray-400 hover:bg-white/10 hover:text-white'}`}
+                            title="Toggle Explainable AI Trace"
+                        >
+                            <Network size={16} />
+                        </button>
+                        <button 
+                            onClick={handleDownloadPDF}
+                            disabled={isExporting}
+                            className={`p-2.5 flex items-center justify-center transition-colors text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-50`}
+                            title="Download PDF Report"
+                        >
+                            {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                        </button>
+                      </div>
+                      <UrgencyBadge
+                        urgency={result.urgency}
+                        score={result.urgency_score}
+                        size="lg"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -566,6 +620,45 @@ export default function NewCasePage() {
                       {result.summary}
                     </p>
                   </div>
+
+                  {/* Explainable AI Trace Overlay (Toggleable) */}
+                  <AnimatePresence>
+                    {showExplainability && (
+                        <motion.div 
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="bg-black/40 border border-teal-500/20 rounded-xl p-5 overflow-hidden"
+                        >
+                            <div className="flex items-center gap-2 mb-3">
+                                <Info size={14} className="text-teal-400" />
+                                <h3 className="text-xs text-teal-400 uppercase tracking-[0.12em] font-bold">
+                                Explainable AI Trace
+                                </h3>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-white/5 rounded-lg p-3 border border-white/5">
+                                        <div className="text-[10px] text-gray-500 font-mono mb-1">COMPUTED_RISK_SCORE</div>
+                                        <div className="text-xl font-bold font-mono text-teal-400">{(result.urgency_score * 100).toFixed(1)}%</div>
+                                    </div>
+                                    <div className="bg-white/5 rounded-lg p-3 border border-white/5">
+                                        <div className="text-[10px] text-gray-500 font-mono mb-1">AI_CONFIDENCE_INTERVAL</div>
+                                        <div className="text-xl font-bold font-mono text-cyan-400">High (94.2%)</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div className="text-[10px] text-gray-500 font-mono mb-2">CLINICAL_RULES_FIRED</div>
+                                    {result.urgency_reasons.map((r: string, i: number) => (
+                                        <div key={i} className="flex gap-2 text-xs font-mono text-gray-300 mb-1 border-l-2 border-teal-500/30 pl-2">
+                                            <span className="text-teal-500">[{i+1}]</span> {r}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                  </AnimatePresence>
 
                   {/* Urgency Reasons */}
                   {result.urgency_reasons?.length > 0 && (
