@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
@@ -23,6 +23,10 @@ import {
   ListChecks,
   Clock,
   User,
+  Image as ImageIcon,
+  UploadCloud,
+  Square,
+  Trash2,
 } from "lucide-react";
 
 const Scene3D = dynamic(() => import("@/components/3d/Scene3D"), { ssr: false });
@@ -44,41 +48,157 @@ const SAMPLE_NOTES = [
 export default function NewCasePage() {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [inputMode, setInputMode] = useState<"text" | "audio" | "image">("text");
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
   const [currentStage, setCurrentStage] = useState(-1);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Audio State
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [audioFile, setAudioFile] = useState<File | null>(null);
+
+  // Image State
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
   useEffect(() => setMounted(true), []);
 
-  const handleAnalyze = async () => {
-    if (!inputText.trim()) return;
-    setLoading(true);
+  // Timer for Audio Recording
+  useEffect(() => {
+    if (isRecording) {
+      timerRef.current = setInterval(() => {
+        setRecordingTime((prev) => prev + 1);
+      }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isRecording]);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const file = new File([audioBlob], "recorded_audio.webm", { type: 'audio/webm' });
+        setAudioFile(file);
+        
+        // Stop all tracks
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      setError(null);
+    } catch (err: any) {
+      setError(`Microphone access denied: ${err.message}`);
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearAudio = () => {
+    setAudioFile(null);
+    setRecordingTime(0);
+  };
+
+  const clearImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+  };
+
+  // Main processing function
+  const handleProcessInput = async () => {
     setError(null);
     setResult(null);
     setCurrentStage(0);
+    
+    let textToAnalyze = inputText;
+
+    try {
+      if (inputMode === "audio" && audioFile) {
+        setLoading(true);
+        // Add fake processing stage for transcription
+        const res = await triageAPI.transcribeAudio(audioFile);
+        textToAnalyze = res.data.transcript;
+        setInputText(textToAnalyze); // update UI
+        setInputMode("text"); // switch back to text mode to show results
+      } else if (inputMode === "image" && imageFile) {
+        setLoading(true);
+        const res = await triageAPI.analyzeImage(imageFile);
+        textToAnalyze = res.data.text;
+        setInputText(textToAnalyze); // update UI
+        setInputMode("text"); // switch back to text mode
+      }
+
+      if (!textToAnalyze.trim()) {
+        throw new Error("No text content found to analyze.");
+      }
+
+      await executeMainPipeline(textToAnalyze);
+    } catch (e: any) {
+      setLoading(false);
+      setError(e.response?.data?.detail || e.message || "An error occurred during processing.");
+    }
+  };
+
+  const executeMainPipeline = async (text: string) => {
+    setLoading(true);
 
     // Simulate pipeline stages for visual effect
     for (let i = 0; i < PIPELINE_STAGES.length - 1; i++) {
-      await new Promise((r) => setTimeout(r, PIPELINE_STAGES[i].duration));
-      setCurrentStage(i + 1);
+        await new Promise((r) => setTimeout(r, PIPELINE_STAGES[i].duration));
+        setCurrentStage(i + 1);
     }
 
     try {
-      const res = await triageAPI.analyzeNote(inputText);
+      const res = await triageAPI.analyzeNote(text);
       setResult(res.data);
       setCurrentStage(PIPELINE_STAGES.length - 1);
     } catch (e: any) {
-      // Create a demo result if backend not available
+      // Demo fallback
       setResult({
         case_id: Math.random().toString(36).substring(2, 10).toUpperCase(),
         patient_id: `PT-${Math.floor(Math.random() * 10000).toString().padStart(5, "0")}`,
-        original_text: inputText,
+        original_text: text,
         summary: "AI analysis completed — this is a demo result. Connect the backend for real NLP processing.",
-        entities: [
-          { type: "symptom", value: "identified from text", confidence: 0.85 },
-        ],
+        entities: [{ type: "symptom", value: "identified from text", confidence: 0.85 }],
         urgency: "medium",
         urgency_score: 0.55,
         urgency_reasons: ["Demo mode — connect backend for real classification"],
@@ -93,9 +213,17 @@ export default function NewCasePage() {
   };
 
   const loadSample = (idx: number) => {
+    setInputMode("text");
     setInputText(SAMPLE_NOTES[idx]);
     setResult(null);
     setCurrentStage(-1);
+    setError(null);
+  };
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
   };
 
   return (
@@ -116,65 +244,191 @@ export default function NewCasePage() {
               New <span className="gradient-text">Triage Case</span>
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Paste a patient intake note for AI-powered clinical analysis
+              Submit patient details via text, voice, or image for AI-powered clinical analysis.
             </p>
           </motion.div>
 
           <div className="grid lg:grid-cols-5 gap-6">
             {/* ── Left: Input ────────────────── */}
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-3 flex flex-col gap-4">
+            
+              {/* Tabs */}
+              <div className="flex bg-white/5 rounded-xl p-1 gap-1 border border-white/10 w-full max-w-sm">
+                {[
+                  { id: "text", icon: <FileText size={14} />, label: "Text" },
+                  { id: "audio", icon: <Mic size={14} />, label: "Audio" },
+                  { id: "image", icon: <ImageIcon size={14} />, label: "Image" },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                        setInputMode(tab.id as any);
+                        setError(null);
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg font-medium transition-all ${
+                      inputMode === tab.id
+                        ? "bg-teal-500 shadow-lg text-white"
+                        : "text-gray-400 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    {tab.icon}
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass rounded-2xl p-6"
+                className="glass rounded-2xl p-6 relative overflow-hidden flex flex-col min-h-[380px]"
               >
-                <label className="text-xs text-gray-500 uppercase tracking-[0.12em] font-semibold mb-3 block">
-                  Patient Intake Note
-                </label>
-                <textarea
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Paste patient intake note, clinical observations, paramedic report, or any unstructured clinical text here..."
-                  rows={8}
-                  className="w-full bg-white/[0.03] border border-white/8 rounded-xl p-4 text-sm text-gray-200 placeholder-gray-600 resize-none focus:border-teal-500/40 transition-colors leading-relaxed"
-                />
+                {/* Mode: TEXT */}
+                {inputMode === "text" && (
+                    <div className="flex-1 flex flex-col">
+                        <label className="text-xs text-gray-500 uppercase tracking-[0.12em] font-semibold mb-3 block">
+                        Patient Intake Note
+                        </label>
+                        <textarea
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        placeholder="Paste patient intake note, clinical observations, paramedic report, or any unstructured clinical text here..."
+                        className="flex-1 w-full bg-white/[0.03] border border-white/8 rounded-xl p-4 text-sm text-gray-200 placeholder-gray-600 resize-none focus:border-teal-500/40 transition-colors leading-relaxed"
+                        />
+                        <div className="mt-4">
+                        <p className="text-xs text-gray-500 mb-2">Try a sample case:</p>
+                        <div className="flex flex-wrap gap-2">
+                            {["STEMI Case", "Thunderclap Headache", "Appendicitis"].map((label, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => loadSample(i)}
+                                    className="text-xs px-3 py-1.5 rounded-lg glass-subtle text-gray-400 hover:text-teal-400 hover:border-teal-500/20 transition-all cursor-pointer"
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                        </div>
+                    </div>
+                )}
 
-                {/* Sample notes */}
-                <div className="mt-4 mb-5">
-                  <p className="text-xs text-gray-500 mb-2">
-                    Try a sample case:
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {["STEMI Case", "Thunderclap Headache", "Appendicitis"].map(
-                      (label, i) => (
-                        <button
-                          key={i}
-                          onClick={() => loadSample(i)}
-                          className="text-xs px-3 py-1.5 rounded-lg glass-subtle text-gray-400 hover:text-teal-400 hover:border-teal-500/20 transition-all cursor-pointer"
-                        >
-                          {label}
-                        </button>
-                      )
-                    )}
-                  </div>
-                </div>
+                {/* Mode: AUDIO */}
+                {inputMode === "audio" && (
+                    <div className="flex-1 flex flex-col items-center justify-center space-y-6">
+                        {!audioFile ? (
+                            <>
+                                <div className={`relative flex items-center justify-center w-32 h-32 rounded-full border-2 ${isRecording ? 'border-red-500/50 pulse-glow bg-red-500/10' : 'border-teal-500/30 bg-teal-500/5'}`}>
+                                    {isRecording ? (
+                                        <button onClick={stopRecording} className="flex flex-col items-center justify-center text-red-400 hover:text-red-300 transition-colors">
+                                            <Square size={32} className="mb-2 fill-current" />
+                                            <span className="text-sm font-bold tracking-widest">{formatTime(recordingTime)}</span>
+                                        </button>
+                                    ) : (
+                                        <button onClick={startRecording} className="flex flex-col items-center justify-center text-teal-400 hover:text-teal-300 transition-colors">
+                                            <Mic size={40} className="mb-2" />
+                                            <span className="text-sm font-bold">Record</span>
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-sm text-gray-400 mb-4">{isRecording ? "Recording symptoms... click stop to finish." : "Speak directly into your microphone to record patient symptoms."}</p>
+                                    <div className="relative">
+                                        <div className="absolute inset-0 flex items-center">
+                                            <div className="w-full border-t border-gray-700"></div>
+                                        </div>
+                                        <div className="relative flex justify-center text-sm">
+                                            <span className="px-2 bg-transparent text-gray-500 text-xs">OR UPLOAD FILE</span>
+                                        </div>
+                                    </div>
+                                    <label className="mt-4 inline-flex items-center gap-2 px-4 py-2 border border-gray-700 rounded-lg cursor-pointer hover:bg-white/5 transition-colors text-sm text-gray-300">
+                                        <UploadCloud size={16} />
+                                        <span>Select Audio File</span>
+                                        <input type="file" accept="audio/*" className="hidden" onChange={(e) => {
+                                            if (e.target.files && e.target.files[0]) setAudioFile(e.target.files[0]);
+                                        }} />
+                                    </label>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="w-full h-full flex flex-col items-center justify-center">
+                                <div className="glass-subtle p-6 rounded-2xl border-teal-500/30 w-full flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
+                                            <Mic size={20} />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-gray-200 font-medium text-sm">{audioFile.name}</h4>
+                                            <p className="text-gray-500 text-xs mt-1">Ready for transcription</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={clearAudio} className="text-gray-500 hover:text-red-400 transition-colors p-2">
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
-                {/* Actions */}
-                <div className="flex items-center gap-3">
+                {/* Mode: IMAGE */}
+                {inputMode === "image" && (
+                    <div className="flex-1 flex flex-col items-center justify-center">
+                        {!imageFile ? (
+                            <div className="w-full h-full border-2 border-dashed border-gray-700 rounded-xl flex flex-col items-center justify-center p-8 hover:border-teal-500/50 hover:bg-teal-500/5 transition-all group">
+                                <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer">
+                                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                        <ImageIcon size={28} className="text-gray-400 group-hover:text-teal-400 transition-colors" />
+                                    </div>
+                                    <span className="text-gray-300 font-medium mb-1 line-clamp-1">Drag & drop medical report or note</span>
+                                    <span className="text-gray-500 text-xs mb-4">JPEG, PNG, WEBP</span>
+                                    <span className="text-xs px-4 py-2 rounded-lg bg-white/10 text-gray-300 group-hover:bg-teal-500/20 group-hover:text-teal-400 transition-colors">
+                                        Browse Files
+                                    </span>
+                                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                                </label>
+                            </div>
+                        ) : (
+                            <div className="w-full flex flex-col items-center justify-center h-full gap-4">
+                                <div className="relative w-full max-w-sm rounded-xl overflow-hidden border border-white/10 shadow-lg">
+                                    <img src={imagePreview!} alt="Report Preview" className="w-full h-auto object-cover max-h-[220px]" />
+                                    <button onClick={clearImage} className="absolute top-2 right-2 bg-gray-900/80 p-1.5 rounded-lg text-gray-300 hover:text-red-400 transition-colors">
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                                <div className="text-center">
+                                    <h4 className="text-gray-200 font-medium text-sm">{imageFile.name}</h4>
+                                    <p className="text-gray-500 text-xs mt-1">Ready for OCR Extraction</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Actions bottom bar */}
+                <div className="mt-6 flex items-center gap-3 pt-4 border-t border-white/5">
                   <button
-                    onClick={handleAnalyze}
-                    disabled={loading || !inputText.trim()}
-                    className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
+                    onClick={handleProcessInput}
+                    disabled={
+                        loading || 
+                        (inputMode === 'text' && !inputText.trim()) ||
+                        (inputMode === 'audio' && !audioFile) ||
+                        (inputMode === 'image' && !imageFile) ||
+                        isRecording
+                    }
+                    className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none w-full justify-center"
                   >
                     {loading ? (
                       <>
                         <Loader2 size={16} className="animate-spin" />
-                        Analyzing...
+                        {inputMode === 'audio' && !result ? 'Transcribing & Analyzing...' : 
+                         inputMode === 'image' && !result ? 'Extracting Text & Analyzing...' : 
+                         'Analyzing...'}
                       </>
                     ) : (
                       <>
                         <Activity size={16} />
-                        Analyze & Triage
+                        {inputMode === 'text' ? 'Analyze Note' : 
+                         inputMode === 'audio' ? 'Transcribe & Analyze' : 
+                         'Extract Text & Analyze'}
                         <Send size={14} />
                       </>
                     )}
@@ -182,18 +436,18 @@ export default function NewCasePage() {
                   {result && (
                     <button
                       onClick={() => router.push("/dashboard")}
-                      className="btn-secondary !py-2 !text-sm"
+                      className="btn-secondary !text-sm whitespace-nowrap"
                     >
-                      View Dashboard
+                      Dashboard
                       <ArrowRight size={14} />
                     </button>
                   )}
                 </div>
 
                 {error && (
-                  <div className="mt-4 text-sm text-red-400 flex items-center gap-2">
-                    <AlertCircle size={14} />
-                    {error}
+                  <div className="mt-4 text-sm text-red-400 flex items-center gap-2 bg-red-500/10 p-3 rounded-lg border border-red-500/20">
+                    <AlertCircle size={14} className="flex-shrink-0" />
+                    <span>{error}</span>
                   </div>
                 )}
               </motion.div>
@@ -205,7 +459,7 @@ export default function NewCasePage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="glass rounded-2xl p-6"
+                className="glass rounded-2xl p-6 h-full"
               >
                 <h3 className="text-xs text-teal-400 uppercase tracking-[0.12em] font-bold mb-5">
                   NLP Pipeline
@@ -214,7 +468,6 @@ export default function NewCasePage() {
                   {PIPELINE_STAGES.map((stage, i) => {
                     const isActive = i === currentStage;
                     const isDone = i < currentStage;
-                    const isPending = i > currentStage;
                     return (
                       <div key={i} className="pipeline-step py-3">
                         <div
@@ -246,8 +499,8 @@ export default function NewCasePage() {
                 </div>
 
                 {currentStage === -1 && (
-                  <div className="mt-4 text-xs text-gray-600 text-center">
-                    Submit a note to start the pipeline
+                  <div className="mt-8 text-xs text-gray-500 text-center glass-subtle p-4 rounded-xl border border-white/5">
+                    Submit a note, audio recording, or medical report image to start the analysis pipeline
                   </div>
                 )}
               </motion.div>

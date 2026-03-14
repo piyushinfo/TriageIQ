@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.api import triage, cases, audio
+from app.api import triage, cases, audio, vision
 
 app = FastAPI(
     title="TriageIQ API",
@@ -13,7 +13,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=settings.get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -22,6 +22,7 @@ app.add_middleware(
 app.include_router(triage.router, prefix="/api/triage", tags=["Triage"])
 app.include_router(cases.router, prefix="/api/cases", tags=["Cases"])
 app.include_router(audio.router, prefix="/api/audio", tags=["Audio"])
+app.include_router(vision.router, prefix="/api/vision", tags=["Image/Vision OCR"])
 
 @app.get("/")
 async def root():

@@ -15,16 +15,24 @@ export const triageAPI = {
   getCase: (caseId: string) =>
     API.get(`/api/triage/cases/${caseId}`),
 
-  transcribeAudio: (audioFile: File) => {
+  transcribeAudio: async (file: File | Blob) => {
     const formData = new FormData();
-    formData.append("file", audioFile);
-    return API.post("/api/audio/transcribe", formData, {
+    formData.append("file", file, "audio.webm");
+    return API.post<{ transcript: string }>("/api/audio/transcribe", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     });
   },
 
   updateCase: (caseId: string, data: { status?: string; notes?: string }) =>
     API.patch(`/api/cases/${caseId}`, data),
+
+  analyzeImage: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return API.post<{ text: string }>("/api/vision/analyze", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };
 
 export default API;
