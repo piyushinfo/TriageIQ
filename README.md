@@ -5,16 +5,6 @@
 
 ---
 
-## 👥 Team — Syntax Squad 07
-| Member | Role |
-|---|---|
-| Piyush | Frontend — React Dashboard & UI |
-| Himanshu Saini | Frontend — Components & Visualization |
-| Nikhil Tetarwal | Backend — FastAPI & LLM Pipeline |
-| Ritesh Kumar | AI/ML — NER, Urgency Classifier & STT |
-
----
-
 ## 🧠 What is TriageIQ?
 
 TriageIQ is a clinical information assistant that:
