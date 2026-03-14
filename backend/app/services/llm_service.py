@@ -76,10 +76,11 @@ IMPORTANT RULES:
 6. Provide at least 3 specific clinical reasons for your classification"""
 
 async def summarize_patient_note(text: str) -> dict:
-    """Use GPT-4o as the primary triage decision maker."""
+    """Use configured LLM as the primary triage decision maker."""
     try:
-        logger.info(f"[TriageIQ] Calling GPT-4o for triage analysis...")
-        logger.info(f"[TriageIQ] API Key present: {bool(settings.OPENAI_API_KEY and len(settings.OPENAI_API_KEY) > 10)}")
+        logger.info(f"[TriageIQ] Calling {PROVIDER} for triage analysis...")
+        has_key = bool(settings.GROQ_API_KEY or settings.OPENAI_API_KEY)
+        logger.info(f"[TriageIQ] API Key present: {has_key}")
 
         response = await client.chat.completions.create(
             model=MODEL,
@@ -93,15 +94,15 @@ async def summarize_patient_note(text: str) -> dict:
         )
 
         raw = response.choices[0].message.content
-        logger.info(f"[TriageIQ] ✅ GPT-4o responded successfully")
+        logger.info(f"[TriageIQ] ✅ {PROVIDER} responded successfully")
         logger.info(f"[TriageIQ] Raw AI response: {raw[:300]}...")
 
         result = json.loads(raw)
 
         # Verify ai_triage_decision exists
         if "ai_triage_decision" not in result or result["ai_triage_decision"] is None:
-            logger.warning("[TriageIQ] ⚠️ GPT-4o responded but missing ai_triage_decision, adding from context")
-            # GPT-4o sometimes omits this — construct it from risk_flags
+            logger.warning(f"[TriageIQ] ⚠️ {PROVIDER} responded but missing ai_triage_decision, adding from context")
+            # The model sometimes omits this — construct it from risk_flags
             risk_flags = result.get("risk_flags", [])
             if len(risk_flags) >= 3:
                 result["ai_triage_decision"] = {
@@ -123,7 +124,7 @@ async def summarize_patient_note(text: str) -> dict:
         return result
 
     except Exception as e:
-        logger.error(f"[TriageIQ] ❌ GPT-4o FAILED: {type(e).__name__}: {e}")
+        logger.error(f"[TriageIQ] ❌ {PROVIDER} FAILED: {type(e).__name__}: {e}")
         logger.error(f"[TriageIQ] Falling back to keyword-only classification")
         # Fallback when AI is unavailable
         return {
