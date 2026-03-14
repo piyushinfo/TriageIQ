@@ -33,7 +33,15 @@ function DNAHelix() {
 
   useFrame((state) => {
     if (groupRef.current) {
+      // Base rotation
       groupRef.current.rotation.y = state.clock.elapsedTime * 0.08;
+      
+      // Interactive mouse tilt
+      const targetX = (state.pointer.x * Math.PI) / 8;
+      const targetZ = (state.pointer.y * Math.PI) / 8;
+      
+      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, -targetZ, 0.05);
+      groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, -targetX, 0.05);
     }
   });
 
@@ -107,10 +115,19 @@ function CoreSphere() {
 
   useFrame((state) => {
     if (meshRef.current) {
-      const s = 1 + Math.sin(state.clock.elapsedTime * 0.8) * 0.15;
+      // Heartbeat pulse effect
+      const t = state.clock.elapsedTime;
+      const heartbeat = Math.pow(Math.sin(t * 3), 10) * 0.3; // Sharp pulse
+      const s = 1 + Math.sin(t * 0.8) * 0.05 + heartbeat;
+      
       meshRef.current.scale.set(s, s, s);
-      meshRef.current.rotation.y = state.clock.elapsedTime * 0.15;
-      meshRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.1) * 0.1;
+      meshRef.current.rotation.y = t * 0.15;
+      
+      // Interactive mouse float
+      const targetX = (state.pointer.x * Math.PI) / 6;
+      const targetY = (state.pointer.y * Math.PI) / 6;
+      meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, Math.sin(t * 0.1) * 0.1 - targetY, 0.05);
+      meshRef.current.rotation.z = THREE.MathUtils.lerp(meshRef.current.rotation.z, -targetX, 0.05);
     }
   });
 

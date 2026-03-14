@@ -2,7 +2,8 @@
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
+import { MouseEvent as ReactMouseEvent } from "react";
 import {
   Brain,
   ShieldCheck,
@@ -63,12 +64,79 @@ const pipeline = [
   { icon: <BarChart3 size={20} />, label: "Dashboard Output", color: "text-green-400" },
 ];
 
+function SpotlightCard({ feat, i }: { feat: any; i: number }) {
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  function handleMouseMove({ currentTarget, clientX, clientY }: ReactMouseEvent) {
+    const { left, top } = currentTarget.getBoundingClientRect();
+    mouseX.set(clientX - left);
+    mouseY.set(clientY - top);
+  }
+
+  return (
+    <motion.div
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true }}
+      variants={fadeUp}
+      custom={i + 2}
+      onMouseMove={handleMouseMove}
+      className="relative glass-card group cursor-default overflow-hidden p-6"
+    >
+      {/* Magic Spotlight hover effect */}
+      <motion.div
+        className="pointer-events-none absolute -inset-px rounded-xl opacity-0 transition duration-300 group-hover:opacity-100 hidden md:block"
+        style={{
+          background: useMotionTemplate`
+            radial-gradient(
+              400px circle at ${mouseX}px ${mouseY}px,
+              rgba(20, 184, 166, 0.15),
+              transparent 80%
+            )
+          `,
+        }}
+      />
+      <div className="relative z-10">
+        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feat.gradient} flex items-center justify-center text-white mb-4 shadow-[0_0_20px_rgba(20,184,166,0.3)] group-hover:scale-110 group-hover:shadow-[0_0_30px_rgba(20,184,166,0.6)] transition-all duration-300`}>
+          {feat.icon}
+        </div>
+        <h3 className="text-lg font-bold text-white mb-2">{feat.title}</h3>
+        <p className="text-sm text-gray-400 leading-relaxed">{feat.desc}</p>
+      </div>
+    </motion.div>
+  );
+}
+
+function CustomCursor() {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const mouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener("mousemove", mouseMove);
+    return () => window.removeEventListener("mousemove", mouseMove);
+  }, []);
+
+  return (
+    <motion.div
+      className="fixed top-0 left-0 w-8 h-8 rounded-full border border-teal-500/50 pointer-events-none z-[100] items-center justify-center mix-blend-screen hidden lg:flex shadow-[0_0_15px_rgba(20,184,166,0.3)]"
+      animate={{ x: mousePosition.x - 16, y: mousePosition.y - 16 }}
+      transition={{ type: "spring", stiffness: 400, damping: 25, mass: 0.1 }}
+    >
+      <div className="w-1.5 h-1.5 rounded-full bg-teal-400 shadow-[0_0_10px_2px_rgba(45,212,191,1)]" />
+    </motion.div>
+  );
+}
+
 export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] mesh-gradient">
+    <div className="min-h-screen bg-[var(--bg-primary)] mesh-gradient cursor-default">
+      <CustomCursor />
       {mounted && <Scene3D variant="full" />}
 
       <div className="content-overlay">
@@ -93,11 +161,20 @@ export default function LandingPage() {
                 HackCrux 2026 — AI-Powered Clinical Intelligence
               </motion.div>
 
-              {/* Title */}
-              <h1 className="text-5xl md:text-7xl lg:text-8xl font-black mb-6 leading-[0.95] tracking-tight">
-                <span className="text-white">Triage</span>
-                <span className="gradient-text">IQ</span>
-              </h1>
+              {/* Title with Blur Reveal */}
+              <motion.h1 
+                initial={{ opacity: 0, filter: "blur(20px)", y: 20 }}
+                animate={{ opacity: 1, filter: "blur(0px)", y: 0 }}
+                transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                className="text-5xl md:text-7xl lg:text-8xl font-black mb-6 leading-[0.95] tracking-tight relative"
+              >
+                <motion.span 
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3, duration: 2 }}
+                  className="absolute -inset-x-8 -inset-y-4 bg-teal-500/20 blur-[80px] rounded-full z-0 pointer-events-none"
+                />
+                <span className="text-white relative z-10">Triage</span>
+                <span className="gradient-text relative z-10">IQ</span>
+              </motion.h1>
 
               <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
                 Transform unstructured patient notes into{" "}
@@ -216,25 +293,9 @@ export default function LandingPage() {
               Built with cutting-edge AI to support clinicians in emergency and triage workflows
             </motion.p>
 
-            <div className="grid md:grid-cols-2 gap-5">
               {features.map((feat, i) => (
-                <motion.div
-                  key={i}
-                  initial="hidden"
-                  whileInView="visible"
-                  viewport={{ once: true }}
-                  variants={fadeUp}
-                  custom={i + 2}
-                  className="glass-card p-6 group cursor-default"
-                >
-                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feat.gradient} flex items-center justify-center text-white mb-4 shadow-lg group-hover:scale-110 transition-transform`}>
-                    {feat.icon}
-                  </div>
-                  <h3 className="text-lg font-bold text-white mb-2">{feat.title}</h3>
-                  <p className="text-sm text-gray-400 leading-relaxed">{feat.desc}</p>
-                </motion.div>
+                <SpotlightCard key={i} feat={feat} i={i} />
               ))}
-            </div>
           </div>
         </section>
 
