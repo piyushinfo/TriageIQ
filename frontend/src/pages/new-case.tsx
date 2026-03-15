@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
 import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
+import jsPDF from "jspdf";
 import { triageAPI } from "@/utils/api";
 import Navbar from "@/components/shared/Navbar";
 import UrgencyBadge from "@/components/shared/UrgencyBadge";
@@ -242,10 +242,10 @@ export default function NewCasePage() {
         const originalBg = element.style.background;
         element.style.background = "#0f172a"; // Solid dark bg for PDF (slate-900)
         
-        const canvas = await html2canvas(element, { scale: 2, backgroundColor: "#0f172a", useCORS: true });
+        const canvas = await html2canvas(element, { scale: 2, backgroundColor: "#0f172a", useCORS: true } as any);
         const data = canvas.toDataURL("image/png");
         const pdf = new jsPDF("p", "mm", "a4");
-        const imgProps = pdf.getImageProperties(data);
+        const imgProps = (pdf as any).getImageProperties(data);
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
         
