@@ -1,31 +1,27 @@
 "use client";
 
-const URGENCY_STYLES: Record<string, { bg: string; text: string; glow: string; icon: string; label: string }> = {
+const URGENCY_STYLES: Record<string, { bg: string; text: string; icon: string; label: string }> = {
   critical: {
-    bg: "bg-red-500/15 border-red-500/40",
-    text: "text-red-400",
-    glow: "shadow-red-500/20",
+    bg: "bg-red-50 border-red-200",
+    text: "text-red-700",
     icon: "🔴",
     label: "CRITICAL",
   },
   high: {
-    bg: "bg-orange-500/15 border-orange-500/40",
-    text: "text-orange-400",
-    glow: "shadow-orange-500/20",
+    bg: "bg-orange-50 border-orange-200",
+    text: "text-orange-700",
     icon: "🟠",
     label: "HIGH",
   },
   medium: {
-    bg: "bg-yellow-500/15 border-yellow-500/40",
-    text: "text-yellow-400",
-    glow: "shadow-yellow-500/20",
+    bg: "bg-yellow-50 border-yellow-200",
+    text: "text-yellow-700",
     icon: "🟡",
     label: "MEDIUM",
   },
   low: {
-    bg: "bg-green-500/15 border-green-500/40",
-    text: "text-green-400",
-    glow: "shadow-green-500/20",
+    bg: "bg-green-50 border-green-200",
+    text: "text-green-700",
     icon: "🟢",
     label: "LOW",
   },
@@ -41,22 +37,24 @@ export default function UrgencyBadge({ urgency, score, size = "md" }: UrgencyBad
   const style = URGENCY_STYLES[urgency] || URGENCY_STYLES.low;
 
   const sizeClasses = {
-    sm: "text-xs px-2 py-0.5",
-    md: "text-xs px-3 py-1",
-    lg: "text-sm px-4 py-1.5",
+    sm: "text-[10px] px-2 py-0.5",
+    md: "text-xs px-2.5 py-1",
+    lg: "text-xs px-3 py-1.5",
   };
 
   return (
     <span
       className={`
-        inline-flex items-center gap-1.5 rounded-full font-bold border
-        shadow-lg ${style.bg} ${style.text} ${style.glow} ${sizeClasses[size]}
+        inline-flex items-center gap-1.5 rounded bg-white font-bold border shadow-sm
+        ${style.bg} ${style.text} ${sizeClasses[size]} tracking-wider uppercase
       `}
     >
-      <span>{style.icon}</span>
+      <span className="text-[8px]">{style.icon}</span>
       <span>{style.label}</span>
       {score !== undefined && (
-        <span className="opacity-70 ml-0.5">{Math.round(score * 100)}%</span>
+        <span className="opacity-80 ml-1 bg-white/50 px-1 py-0.5 rounded font-mono text-[10px] border border-current/10">
+          {Math.round(score * 100)}%
+        </span>
       )}
     </span>
   );

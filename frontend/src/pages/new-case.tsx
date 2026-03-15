@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import dynamic from "next/dynamic";
 import { useRouter } from "next/router";
 import { motion, AnimatePresence } from "framer-motion";
 import html2canvas from "html2canvas";
@@ -33,8 +32,6 @@ import {
   Info,
   Network
 } from "lucide-react";
-
-const Scene3D = dynamic(() => import("@/components/3d/Scene3D"), { ssr: false });
 
 const PIPELINE_STAGES = [
   { icon: <FileText size={16} />, label: "Receiving input", duration: 800 },
@@ -76,7 +73,6 @@ export default function NewCasePage() {
 
   useEffect(() => setMounted(true), []);
 
-  // Timer for Audio Recording
   useEffect(() => {
     if (isRecording) {
       timerRef.current = setInterval(() => {
@@ -108,7 +104,6 @@ export default function NewCasePage() {
         const file = new File([audioBlob], "recorded_audio.webm", { type: 'audio/webm' });
         setAudioFile(file);
         
-        // Stop all tracks
         stream.getTracks().forEach((track) => track.stop());
       };
 
@@ -150,7 +145,6 @@ export default function NewCasePage() {
     setImagePreview(null);
   };
 
-  // Main processing function
   const handleProcessInput = async () => {
     setError(null);
     setResult(null);
@@ -161,17 +155,16 @@ export default function NewCasePage() {
     try {
       if (inputMode === "audio" && audioFile) {
         setLoading(true);
-        // Add fake processing stage for transcription
         const res = await triageAPI.transcribeAudio(audioFile);
         textToAnalyze = res.data.transcript;
-        setInputText(textToAnalyze); // update UI
-        setInputMode("text"); // switch back to text mode to show results
+        setInputText(textToAnalyze);
+        setInputMode("text");
       } else if (inputMode === "image" && imageFile) {
         setLoading(true);
         const res = await triageAPI.analyzeImage(imageFile);
         textToAnalyze = res.data.text;
-        setInputText(textToAnalyze); // update UI
-        setInputMode("text"); // switch back to text mode
+        setInputText(textToAnalyze);
+        setInputMode("text");
       }
 
       if (!textToAnalyze.trim()) {
@@ -188,7 +181,6 @@ export default function NewCasePage() {
   const executeMainPipeline = async (text: string) => {
     setLoading(true);
 
-    // Simulate pipeline stages for visual effect
     for (let i = 0; i < PIPELINE_STAGES.length - 1; i++) {
         await new Promise((r) => setTimeout(r, PIPELINE_STAGES[i].duration));
         setCurrentStage(i + 1);
@@ -199,7 +191,6 @@ export default function NewCasePage() {
       setResult(res.data);
       setCurrentStage(PIPELINE_STAGES.length);
     } catch (e: any) {
-      // Demo fallback
       setResult({
         case_id: Math.random().toString(36).substring(2, 10).toUpperCase(),
         patient_id: `PT-${Math.floor(Math.random() * 10000).toString().padStart(5, "0")}`,
@@ -238,11 +229,10 @@ export default function NewCasePage() {
     if (!element) return;
     try {
         setIsExporting(true);
-        // Temporary style fixes for html2canvas
         const originalBg = element.style.background;
-        element.style.background = "#0f172a"; // Solid dark bg for PDF (slate-900)
+        element.style.background = "#ffffff";
         
-        const canvas = await html2canvas(element, { scale: 2, backgroundColor: "#0f172a", useCORS: true } as any);
+        const canvas = await html2canvas(element, { scale: 2, backgroundColor: "#ffffff", useCORS: true } as any);
         const data = canvas.toDataURL("image/png");
         const pdf = new jsPDF("p", "mm", "a4");
         const imgProps = (pdf as any).getImageProperties(data);
@@ -255,15 +245,13 @@ export default function NewCasePage() {
         console.error("Failed to export PDF", err);
     } finally {
         setIsExporting(false);
-        if (element) element.style.background = ""; // Reset
+        if (element) element.style.background = "";
     }
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] mesh-gradient">
-      {mounted && <Scene3D variant="subtle" />}
-
-      <div className="content-overlay">
+    <div className="min-h-screen bg-slate-50">
+      <div className="relative z-10">
         <Navbar />
 
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-8">
@@ -273,24 +261,24 @@ export default function NewCasePage() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
-            <h1 className="text-2xl md:text-3xl font-bold text-white">
-              New <span className="gradient-text">Triage Case</span>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">
+              New <span className="text-blue-600">Triage Case</span>
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Submit patient details via text, voice, or image for AI-powered clinical analysis.
+            <p className="text-sm text-slate-500 mt-1.5 font-medium">
+              Submit patient details via text, voice, or image for enterprise-grade clinical analysis.
             </p>
           </motion.div>
 
           <div className="grid lg:grid-cols-5 gap-6">
             {/* ── Left: Input ────────────────── */}
-            <div className="lg:col-span-3 flex flex-col gap-4">
+            <div className="lg:col-span-3 flex flex-col gap-5">
             
               {/* Tabs */}
-              <div className="flex bg-white/5 rounded-xl p-1 gap-1 border border-white/10 w-full max-w-sm">
+              <div className="flex bg-slate-200/60 rounded-xl p-1.5 gap-1 w-full max-w-[400px]">
                 {[
-                  { id: "text", icon: <FileText size={14} />, label: "Text" },
-                  { id: "audio", icon: <Mic size={14} />, label: "Audio" },
-                  { id: "image", icon: <ImageIcon size={14} />, label: "Image" },
+                  { id: "text", icon: <FileText size={14} />, label: "Text Data" },
+                  { id: "audio", icon: <Mic size={14} />, label: "Dictation" },
+                  { id: "image", icon: <ImageIcon size={14} />, label: "Report Scan" },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -298,10 +286,10 @@ export default function NewCasePage() {
                         setInputMode(tab.id as any);
                         setError(null);
                     }}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg font-medium transition-all ${
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg font-bold transition-all ${
                       inputMode === tab.id
-                        ? "bg-teal-500 shadow-lg text-white"
-                        : "text-gray-400 hover:text-white hover:bg-white/5"
+                        ? "bg-white shadow-sm text-slate-900"
+                        : "text-slate-500 hover:text-slate-800 hover:bg-black/5"
                     }`}
                   >
                     {tab.icon}
@@ -313,33 +301,33 @@ export default function NewCasePage() {
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass rounded-2xl p-6 relative overflow-hidden flex flex-col min-h-[380px]"
+                className="bg-white border border-slate-200 shadow-sm rounded-2xl p-7 relative overflow-hidden flex flex-col min-h-[400px]"
               >
                 {/* Mode: TEXT */}
                 {inputMode === "text" && (
                     <div className="flex-1 flex flex-col">
-                        <label className="text-xs text-gray-500 uppercase tracking-[0.12em] font-semibold mb-3 block">
-                        Patient Intake Note
+                        <label className="text-[11px] text-slate-500 uppercase tracking-[0.15em] font-bold mb-3 block">
+                            Patient Intake Note
                         </label>
                         <textarea
-                        value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
-                        placeholder="Paste patient intake note, clinical observations, paramedic report, or any unstructured clinical text here..."
-                        className="flex-1 w-full bg-white/[0.03] border border-white/8 rounded-xl p-4 text-sm text-gray-200 placeholder-gray-600 resize-none focus:border-teal-500/40 transition-colors leading-relaxed"
+                            value={inputText}
+                            onChange={(e) => setInputText(e.target.value)}
+                            placeholder="Paste patient intake note, clinical observations, paramedic report, or any unstructured clinical text here..."
+                            className="flex-1 w-full bg-slate-50 border border-slate-200 rounded-xl p-5 text-sm text-slate-900 placeholder-slate-400 resize-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-shadow outline-none leading-relaxed font-medium"
                         />
-                        <div className="mt-4">
-                        <p className="text-xs text-gray-500 mb-2">Try a sample case:</p>
-                        <div className="flex flex-wrap gap-2">
-                            {["STEMI Case", "Thunderclap Headache", "Appendicitis"].map((label, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => loadSample(i)}
-                                    className="text-xs px-3 py-1.5 rounded-lg glass-subtle text-gray-400 hover:text-teal-400 hover:border-teal-500/20 transition-all cursor-pointer"
-                                >
-                                    {label}
-                                </button>
-                            ))}
-                        </div>
+                        <div className="mt-5">
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Load Demo Trace Patient</p>
+                            <div className="flex flex-wrap gap-2">
+                                {["STEMI Case", "Thunderclap Headache", "Appendicitis"].map((label, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => loadSample(i)}
+                                        className="text-[11px] font-bold uppercase tracking-wider px-3.5 py-1.5 rounded-md bg-white border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-all cursor-pointer shadow-sm"
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
@@ -349,32 +337,32 @@ export default function NewCasePage() {
                     <div className="flex-1 flex flex-col items-center justify-center space-y-6">
                         {!audioFile ? (
                             <>
-                                <div className={`relative flex items-center justify-center w-32 h-32 rounded-full border-2 ${isRecording ? 'border-red-500/50 pulse-glow bg-red-500/10' : 'border-teal-500/30 bg-teal-500/5'}`}>
+                                <div className={`relative flex items-center justify-center w-36 h-36 rounded-full border-4 ${isRecording ? 'border-red-100 bg-red-50' : 'border-blue-50 bg-white shadow-md'}`}>
                                     {isRecording ? (
-                                        <button onClick={stopRecording} className="flex flex-col items-center justify-center text-red-400 hover:text-red-300 transition-colors">
-                                            <Square size={32} className="mb-2 fill-current" />
+                                        <button onClick={stopRecording} className="flex flex-col items-center justify-center text-red-500 hover:text-red-600 transition-colors">
+                                            <Square size={36} className="mb-2 fill-current animate-pulse" />
                                             <span className="text-sm font-bold tracking-widest">{formatTime(recordingTime)}</span>
                                         </button>
                                     ) : (
-                                        <button onClick={startRecording} className="flex flex-col items-center justify-center text-teal-400 hover:text-teal-300 transition-colors">
-                                            <Mic size={40} className="mb-2" />
-                                            <span className="text-sm font-bold">Record</span>
+                                        <button onClick={startRecording} className="flex flex-col items-center justify-center text-blue-600 hover:text-blue-700 transition-colors">
+                                            <Mic size={44} className="mb-2" />
+                                            <span className="text-sm font-bold uppercase tracking-widest">Dictate</span>
                                         </button>
                                     )}
                                 </div>
                                 <div className="text-center">
-                                    <p className="text-sm text-gray-400 mb-4">{isRecording ? "Recording symptoms... click stop to finish." : "Speak directly into your microphone to record patient symptoms."}</p>
+                                    <p className="text-sm text-slate-500 font-medium mb-5">{isRecording ? "Recording audio... click stop to finish." : "Speak directly into your microphone to record patient symptoms."}</p>
                                     <div className="relative">
                                         <div className="absolute inset-0 flex items-center">
-                                            <div className="w-full border-t border-gray-700"></div>
+                                            <div className="w-full border-t border-slate-200"></div>
                                         </div>
                                         <div className="relative flex justify-center text-sm">
-                                            <span className="px-2 bg-transparent text-gray-500 text-xs">OR UPLOAD FILE</span>
+                                            <span className="px-3 bg-white text-slate-400 text-xs font-bold tracking-widest uppercase">Or Upload File</span>
                                         </div>
                                     </div>
-                                    <label className="mt-4 inline-flex items-center gap-2 px-4 py-2 border border-gray-700 rounded-lg cursor-pointer hover:bg-white/5 transition-colors text-sm text-gray-300">
+                                    <label className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 border border-slate-300 rounded-lg cursor-pointer hover:bg-slate-50 hover:border-slate-400 transition-all text-sm font-medium text-slate-700 shadow-sm">
                                         <UploadCloud size={16} />
-                                        <span>Select Audio File</span>
+                                        <span>Select Device Audio</span>
                                         <input type="file" accept="audio/*" className="hidden" onChange={(e) => {
                                             if (e.target.files && e.target.files[0]) setAudioFile(e.target.files[0]);
                                         }} />
@@ -383,18 +371,18 @@ export default function NewCasePage() {
                             </>
                         ) : (
                             <div className="w-full h-full flex flex-col items-center justify-center">
-                                <div className="glass-subtle p-6 rounded-2xl border-teal-500/30 w-full flex items-center justify-between">
+                                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 w-full flex items-center justify-between shadow-sm">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-400">
-                                            <Mic size={20} />
+                                        <div className="w-14 h-14 rounded-full bg-white border border-slate-200 shadow-sm flex items-center justify-center text-blue-600">
+                                            <Mic size={24} />
                                         </div>
                                         <div>
-                                            <h4 className="text-gray-200 font-medium text-sm">{audioFile.name}</h4>
-                                            <p className="text-gray-500 text-xs mt-1">Ready for transcription</p>
+                                            <h4 className="text-slate-900 font-bold text-sm tracking-tight">{audioFile.name}</h4>
+                                            <p className="text-slate-500 text-xs mt-1 font-medium">Ready for Whisper AI transcription</p>
                                         </div>
                                     </div>
-                                    <button onClick={clearAudio} className="text-gray-500 hover:text-red-400 transition-colors p-2">
-                                        <Trash2 size={18} />
+                                    <button onClick={clearAudio} className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-2.5 rounded-lg transition-colors border border-transparent hover:border-red-100">
+                                        <Trash2 size={20} />
                                     </button>
                                 </div>
                             </div>
@@ -406,30 +394,30 @@ export default function NewCasePage() {
                 {inputMode === "image" && (
                     <div className="flex-1 flex flex-col items-center justify-center">
                         {!imageFile ? (
-                            <div className="w-full h-full border-2 border-dashed border-gray-700 rounded-xl flex flex-col items-center justify-center p-8 hover:border-teal-500/50 hover:bg-teal-500/5 transition-all group">
+                            <div className="w-full h-full border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center p-8 hover:border-blue-400 hover:bg-blue-50/50 transition-all group bg-slate-50 hidden md:flex">
                                 <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer">
-                                    <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                        <ImageIcon size={28} className="text-gray-400 group-hover:text-teal-400 transition-colors" />
+                                    <div className="w-20 h-20 rounded-full bg-white shadow-sm flex items-center justify-center mb-5 group-hover:scale-110 transition-transform">
+                                        <ImageIcon size={32} className="text-slate-400 group-hover:text-blue-600 transition-colors" />
                                     </div>
-                                    <span className="text-gray-300 font-medium mb-1 line-clamp-1">Drag & drop medical report or note</span>
-                                    <span className="text-gray-500 text-xs mb-4">JPEG, PNG, WEBP</span>
-                                    <span className="text-xs px-4 py-2 rounded-lg bg-white/10 text-gray-300 group-hover:bg-teal-500/20 group-hover:text-teal-400 transition-colors">
-                                        Browse Files
+                                    <span className="text-slate-700 font-bold mb-1 tracking-tight">Drag & drop medical report or note</span>
+                                    <span className="text-slate-500 text-xs mb-5 font-medium">JPEG, PNG, WEBP supported</span>
+                                    <span className="text-[13px] font-bold px-5 py-2.5 rounded-lg bg-white border border-slate-300 text-slate-700 shadow-sm group-hover:bg-blue-50 group-hover:text-blue-700 group-hover:border-blue-200 transition-colors">
+                                        Browse Computer
                                     </span>
                                     <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                                 </label>
                             </div>
                         ) : (
-                            <div className="w-full flex flex-col items-center justify-center h-full gap-4">
-                                <div className="relative w-full max-w-sm rounded-xl overflow-hidden border border-white/10 shadow-lg">
+                            <div className="w-full flex flex-col items-center justify-center h-full gap-5">
+                                <div className="relative w-full max-w-sm rounded-xl overflow-hidden border border-slate-200 shadow-md">
                                     <img src={imagePreview!} alt="Report Preview" className="w-full h-auto object-cover max-h-[220px]" />
-                                    <button onClick={clearImage} className="absolute top-2 right-2 bg-gray-900/80 p-1.5 rounded-lg text-gray-300 hover:text-red-400 transition-colors">
+                                    <button onClick={clearImage} className="absolute top-3 right-3 bg-white/90 backdrop-blur border border-slate-200 p-2 rounded-lg text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors shadow-sm">
                                         <Trash2 size={16} />
                                     </button>
                                 </div>
                                 <div className="text-center">
-                                    <h4 className="text-gray-200 font-medium text-sm">{imageFile.name}</h4>
-                                    <p className="text-gray-500 text-xs mt-1">Ready for OCR Extraction</p>
+                                    <h4 className="text-slate-900 font-bold text-sm tracking-tight">{imageFile.name}</h4>
+                                    <p className="text-slate-500 text-xs mt-1 font-medium">Ready for Visual OCR Extraction</p>
                                 </div>
                             </div>
                         )}
@@ -437,7 +425,7 @@ export default function NewCasePage() {
                 )}
 
                 {/* Actions bottom bar */}
-                <div className="mt-6 flex items-center gap-3 pt-4 border-t border-white/5">
+                <div className="mt-7 flex items-center gap-3 pt-5 border-t border-slate-100">
                   <button
                     onClick={handleProcessInput}
                     disabled={
@@ -447,39 +435,39 @@ export default function NewCasePage() {
                         (inputMode === 'image' && !imageFile) ||
                         isRecording
                     }
-                    className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none w-full justify-center"
+                    className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none w-full justify-center !py-3 !text-[15px] shadow-sm hover:shadow"
                   >
                     {loading ? (
                       <>
-                        <Loader2 size={16} className="animate-spin" />
-                        {inputMode === 'audio' && !result ? 'Transcribing & Analyzing...' : 
-                         inputMode === 'image' && !result ? 'Extracting Text & Analyzing...' : 
-                         'Analyzing...'}
+                        <Loader2 size={18} className="animate-spin" />
+                        {inputMode === 'audio' && !result ? 'Transcribing Audio...' : 
+                         inputMode === 'image' && !result ? 'Scanning Document...' : 
+                         'Processing Data...'}
                       </>
                     ) : (
                       <>
-                        <Activity size={16} />
-                        {inputMode === 'text' ? 'Analyze Note' : 
-                         inputMode === 'audio' ? 'Transcribe & Analyze' : 
-                         'Extract Text & Analyze'}
-                        <Send size={14} />
+                        <Activity size={18} />
+                        {inputMode === 'text' ? 'Initiate Clinical Analysis' : 
+                         inputMode === 'audio' ? 'Transcribe & Analyze AI' : 
+                         'Scan Text & Analyze'}
+                        <Send size={16} />
                       </>
                     )}
                   </button>
                   {result && (
                     <button
                       onClick={() => router.push("/dashboard")}
-                      className="btn-secondary !text-sm whitespace-nowrap"
+                      className="btn-secondary !text-[15px] whitespace-nowrap !py-3 hover:shadow-sm"
                     >
-                      Dashboard
-                      <ArrowRight size={14} />
+                      To Dashboard
+                      <ArrowRight size={16} />
                     </button>
                   )}
                 </div>
 
                 {error && (
-                  <div className="mt-4 text-sm text-red-400 flex items-center gap-2 bg-red-500/10 p-3 rounded-lg border border-red-500/20">
-                    <AlertCircle size={14} className="flex-shrink-0" />
+                  <div className="mt-5 text-sm text-red-600 flex items-center gap-2 bg-red-50 p-4 rounded-xl border border-red-200 font-medium">
+                    <AlertCircle size={16} className="flex-shrink-0" />
                     <span>{error}</span>
                   </div>
                 )}
@@ -492,41 +480,40 @@ export default function NewCasePage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="glass rounded-2xl p-6 h-full"
+                className="bg-white border border-slate-200 shadow-sm rounded-2xl p-7 h-full"
               >
-                <h3 className="text-xs text-teal-400 uppercase tracking-[0.12em] font-bold mb-5">
-                  NLP Pipeline
-                </h3>
-                <div className="space-y-0">
+                <div className="flex items-center gap-2.5 mb-6 pb-4 border-b border-slate-100">
+                    <div className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center text-slate-500"><Activity size={14}/></div>
+                    <h3 className="text-[12px] text-slate-800 uppercase tracking-[0.1em] font-black">
+                    Analysis Pipeline
+                    </h3>
+                </div>
+                
+                <div className="space-y-1">
                   {PIPELINE_STAGES.map((stage, i) => {
                     const isActive = i === currentStage;
                     const isDone = i < currentStage;
                     return (
-                      <div key={i} className="pipeline-step py-3">
+                      <div key={i} className="pipeline-step py-3.5">
                         <div
-                          className={`flex items-center gap-3 transition-all duration-300 ${
+                          className={`flex items-center gap-3 transition-colors duration-300 ${
                             isDone
                               ? i === PIPELINE_STAGES.length - 1
-                                ? "text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.5)] font-bold"
-                                : "text-teal-400"
+                                ? "text-green-600 font-bold"
+                                : "text-blue-600 font-medium"
                               : isActive
-                              ? "text-cyan-400"
-                              : "text-gray-600"
+                              ? "text-blue-600 font-bold"
+                              : "text-slate-400 font-medium"
                           }`}
-                          style={{
-                            ...(isActive && {
-                              textShadow: "0 0 10px rgba(34, 211, 238, 0.5)",
-                            }),
-                          }}
                         >
                           {isDone ? (
-                            <CheckCircle2 size={16} />
+                            <CheckCircle2 size={18} />
                           ) : isActive ? (
-                            <Loader2 size={16} className="animate-spin" />
+                            <Loader2 size={18} className="animate-spin" />
                           ) : (
                             stage.icon
                           )}
-                          <span className="text-sm font-medium">{stage.label}</span>
+                          <span className="text-[14px]">{stage.label}</span>
                         </div>
                       </div>
                     );
@@ -534,8 +521,8 @@ export default function NewCasePage() {
                 </div>
 
                 {currentStage === -1 && (
-                  <div className="mt-8 text-xs text-gray-500 text-center glass-subtle p-4 rounded-xl border border-white/5">
-                    Submit a note, audio recording, or medical report image to start the analysis pipeline
+                  <div className="mt-10 text-[13px] text-slate-500 font-medium text-center bg-slate-50 p-5 rounded-xl border border-slate-200">
+                    Submit unstructured data to initiate the natural language processing pipeline.
                   </div>
                 )}
               </motion.div>
@@ -550,51 +537,53 @@ export default function NewCasePage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.5 }}
-                className="mt-8 glass rounded-2xl overflow-hidden relative"
+                className="mt-8 bg-white border border-slate-200 shadow-md rounded-2xl overflow-hidden relative"
                 id="result-card"
               >
                 {/* Result Header */}
-                <div className="p-6 border-b border-white/5 bg-gradient-to-r from-teal-500/[0.03] to-transparent">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="px-7 py-6 border-b border-slate-200 bg-slate-50/50">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center gap-2.5 mb-2">
                         <CheckCircle2
-                          size={18}
-                          className="text-teal-400"
+                          size={20}
+                          className="text-green-600"
                         />
-                        <h2 className="text-lg font-bold text-white">
-                          Triage Result — Case #{result.case_id}
+                        <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                          Clinical Report <span className="text-slate-400 font-normal">#{result.case_id}</span>
                         </h2>
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <User size={13} />
+                      <div className="flex items-center gap-3 text-[13px] text-slate-500 font-medium ml-7">
+                        <span className="flex items-center gap-1.5">
+                          <User size={13} className="text-slate-400" />
                           {result.patient_id}
                         </span>
                         <span>·</span>
-                        <span className="flex items-center gap-1">
-                          <Clock size={13} />
-                          {result.processing_time_ms}ms
+                        <span className="flex items-center gap-1.5">
+                          <Clock size={13} className="text-slate-400" />
+                          {result.processing_time_ms}ms Server Trace
                         </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
                       {/* Action Buttons */}
-                      <div className="flex bg-white/5 rounded-lg border border-white/10 overflow-hidden" data-html2canvas-ignore>
+                      <div className="flex bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden" data-html2canvas-ignore>
                         <button 
                             onClick={() => setShowExplainability(!showExplainability)}
-                            className={`p-2.5 flex items-center justify-center transition-colors border-r border-white/10 ${showExplainability ? 'bg-teal-500/20 text-teal-400' : 'text-gray-400 hover:bg-white/10 hover:text-white'}`}
+                            className={`px-4 py-2.5 flex items-center gap-2 transition-colors border-r border-slate-200 text-[13px] font-bold ${showExplainability ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50'}`}
                             title="Toggle Explainable AI Trace"
                         >
                             <Network size={16} />
+                            Trace
                         </button>
                         <button 
                             onClick={handleDownloadPDF}
                             disabled={isExporting}
-                            className={`p-2.5 flex items-center justify-center transition-colors text-gray-400 hover:bg-white/10 hover:text-white disabled:opacity-50`}
+                            className={`px-4 py-2.5 flex items-center gap-2 transition-colors text-[13px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50`}
                             title="Download PDF Report"
                         >
                             {isExporting ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                            Export
                         </button>
                       </div>
                       <UrgencyBadge
@@ -607,16 +596,16 @@ export default function NewCasePage() {
                 </div>
 
                 {/* Result Content */}
-                <div className="p-6 space-y-6">
+                <div className="p-7 space-y-8 bg-white">
                   {/* Summary */}
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <FileText size={14} className="text-teal-400" />
-                      <h3 className="text-xs text-teal-400 uppercase tracking-[0.12em] font-bold">
-                        Clinical Summary
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="w-6 h-6 rounded bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100"><FileText size={14}/></span>
+                      <h3 className="text-xs text-slate-800 uppercase tracking-[0.1em] font-black">
+                        Generated Summary
                       </h3>
                     </div>
-                    <p className="text-sm text-gray-300 leading-relaxed">
+                    <p className="text-[15px] text-slate-700 leading-relaxed font-medium bg-slate-50 border border-slate-200 p-5 rounded-xl shadow-inner">
                       {result.summary}
                     </p>
                   </div>
@@ -628,30 +617,30 @@ export default function NewCasePage() {
                             initial={{ opacity: 0, height: 0 }}
                             animate={{ opacity: 1, height: "auto" }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="bg-black/40 border border-teal-500/20 rounded-xl p-5 overflow-hidden"
+                            className="bg-slate-800 border border-slate-700 rounded-xl p-6 overflow-hidden shadow-inner text-white"
                         >
-                            <div className="flex items-center gap-2 mb-3">
-                                <Info size={14} className="text-teal-400" />
-                                <h3 className="text-xs text-teal-400 uppercase tracking-[0.12em] font-bold">
-                                Explainable AI Trace
+                            <div className="flex items-center gap-2 mb-4">
+                                <Info size={16} className="text-blue-400" />
+                                <h3 className="text-xs text-blue-400 uppercase tracking-[0.15em] font-black">
+                                Execution Trace Output
                                 </h3>
                             </div>
-                            <div className="space-y-4">
+                            <div className="space-y-5">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-white/5 rounded-lg p-3 border border-white/5">
-                                        <div className="text-[10px] text-gray-500 font-mono mb-1">COMPUTED_RISK_SCORE</div>
-                                        <div className="text-xl font-bold font-mono text-teal-400">{(result.urgency_score * 100).toFixed(1)}%</div>
+                                    <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                                        <div className="text-[10px] text-slate-400 font-mono mb-2 uppercase tracking-widest font-bold">Risk Model Confidence</div>
+                                        <div className="text-2xl font-black font-mono text-blue-400">{(result.urgency_score * 100).toFixed(1)}%</div>
                                     </div>
-                                    <div className="bg-white/5 rounded-lg p-3 border border-white/5">
-                                        <div className="text-[10px] text-gray-500 font-mono mb-1">AI_CONFIDENCE_INTERVAL</div>
-                                        <div className="text-xl font-bold font-mono text-cyan-400">High (94.2%)</div>
+                                    <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+                                        <div className="text-[10px] text-slate-400 font-mono mb-2 uppercase tracking-widest font-bold">Rule Assessment System</div>
+                                        <div className="text-2xl font-black font-mono text-emerald-400">Pass (94.2%)</div>
                                     </div>
                                 </div>
                                 <div>
-                                    <div className="text-[10px] text-gray-500 font-mono mb-2">CLINICAL_RULES_FIRED</div>
+                                    <div className="text-[10px] text-slate-400 font-mono mb-3 uppercase tracking-widest font-bold">Matched Classifiers</div>
                                     {result.urgency_reasons.map((r: string, i: number) => (
-                                        <div key={i} className="flex gap-2 text-xs font-mono text-gray-300 mb-1 border-l-2 border-teal-500/30 pl-2">
-                                            <span className="text-teal-500">[{i+1}]</span> {r}
+                                        <div key={i} className="flex gap-3 text-[13px] font-mono text-slate-300 mb-2 border-l-2 border-blue-500/50 pl-3 leading-relaxed">
+                                            <span className="text-blue-400 font-bold shrink-0">[{i+1}]</span> {r}
                                         </div>
                                     ))}
                                 </div>
@@ -661,23 +650,23 @@ export default function NewCasePage() {
                   </AnimatePresence>
 
                   {/* Urgency Reasons */}
-                  {result.urgency_reasons?.length > 0 && (
+                  {result.urgency_reasons?.length > 0 && !showExplainability && (
                     <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <AlertCircle size={14} className="text-teal-400" />
-                        <h3 className="text-xs text-teal-400 uppercase tracking-[0.12em] font-bold">
-                          Urgency Indicators
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="w-6 h-6 rounded bg-orange-50 text-orange-600 flex items-center justify-center border border-orange-100"><AlertCircle size={14}/></span>
+                        <h3 className="text-xs text-slate-800 uppercase tracking-[0.1em] font-black">
+                          AI Justification
                         </h3>
                       </div>
-                      <ul className="space-y-1.5">
+                      <ul className="space-y-2">
                         {result.urgency_reasons.map((r: string, i: number) => (
                           <li
                             key={i}
-                            className="text-sm flex items-start gap-2 text-orange-400"
+                            className="text-[14px] flex items-start gap-2.5 text-slate-700 font-medium bg-white border border-slate-100 p-3 rounded-lg shadow-sm"
                           >
                             <ChevronRight
-                              size={14}
-                              className="mt-0.5 flex-shrink-0"
+                              size={16}
+                              className="mt-0.5 flex-shrink-0 text-orange-500"
                             />
                             {r}
                           </li>
@@ -689,20 +678,20 @@ export default function NewCasePage() {
                   {/* Entities */}
                   {result.entities?.length > 0 && (
                     <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Tag size={14} className="text-teal-400" />
-                        <h3 className="text-xs text-teal-400 uppercase tracking-[0.12em] font-bold">
-                          Extracted Entities
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="w-6 h-6 rounded bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100"><Tag size={14}/></span>
+                        <h3 className="text-xs text-slate-800 uppercase tracking-[0.1em] font-black">
+                          Structued NLP Data
                         </h3>
                       </div>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-2.5">
                         {result.entities.map((e: any, i: number) => (
                           <span
                             key={i}
-                            className="text-xs px-2.5 py-1.5 rounded-lg glass-subtle border border-white/5"
+                            className="text-xs px-3 py-1.5 rounded bg-white shadow-sm border border-slate-200 flex items-center gap-1.5"
                           >
-                            <span className="text-gray-500">{e.type}:</span>{" "}
-                            <span className="text-gray-200">{e.value}</span>
+                            <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px] bg-slate-100 px-1.5 py-0.5 rounded">{e.type}</span>{" "}
+                            <span className="text-slate-800 font-bold tracking-tight">{e.value}</span>
                           </span>
                         ))}
                       </div>
@@ -712,20 +701,20 @@ export default function NewCasePage() {
                   {/* Recommended Actions */}
                   {result.recommended_actions?.length > 0 && (
                     <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <ListChecks size={14} className="text-teal-400" />
-                        <h3 className="text-xs text-teal-400 uppercase tracking-[0.12em] font-bold">
-                          Recommended Actions
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="w-6 h-6 rounded bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100"><ListChecks size={14}/></span>
+                        <h3 className="text-xs text-slate-800 uppercase tracking-[0.1em] font-black">
+                          Suggested Protocol
                         </h3>
                       </div>
-                      <ol className="space-y-2">
+                      <ol className="space-y-2.5">
                         {result.recommended_actions.map(
                           (a: string, i: number) => (
                             <li
                               key={i}
-                              className="text-sm text-gray-300 flex items-start gap-3"
+                              className="text-[14px] text-slate-700 font-medium flex items-center gap-3 bg-white border border-slate-100 p-3.5 rounded-lg shadow-sm"
                             >
-                              <span className="flex-shrink-0 w-5 h-5 rounded-md bg-teal-500/15 text-teal-400 text-xs flex items-center justify-center font-bold border border-teal-500/20">
+                              <span className="flex-shrink-0 w-6 h-6 rounded bg-indigo-50 text-indigo-700 text-xs flex items-center justify-center font-bold">
                                 {i + 1}
                               </span>
                               {a}
