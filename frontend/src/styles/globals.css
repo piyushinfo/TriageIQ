@@ -186,3 +186,97 @@ input:focus, textarea:focus, select:focus {
 .animate-float, .animate-pulse-glow {
   animation: none !important;
 }
+
+@keyframes heroGridShift {
+  0% {
+    background-position: 0 0, 0 0;
+  }
+  100% {
+    background-position: 46px 46px, 46px 46px;
+  }
+}
+
+@keyframes heroFloatSlow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(12px, -16px, 0) scale(1.05);
+  }
+}
+
+@keyframes heroFloatMedium {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-14px, 14px, 0) scale(1.06);
+  }
+}
+
+@keyframes heroNetworkDrift {
+  0%,
+  100% {
+    transform: translateX(0px);
+  }
+  50% {
+    transform: translateX(-10px);
+  }
+}
+
+@keyframes heroWaveDrift {
+  0%,
+  100% {
+    transform: translateX(0px);
+  }
+  50% {
+    transform: translateX(-18px);
+  }
+}
+
+@keyframes heroNodePulse {
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.hero-grid-shift {
+  animation: heroGridShift 28s linear infinite;
+}
+
+.hero-float-slow {
+  animation: heroFloatSlow 12s ease-in-out infinite;
+}
+
+.hero-float-medium {
+  animation: heroFloatMedium 9s ease-in-out infinite;
+}
+
+.hero-network-drift {
+  animation: heroNetworkDrift 16s ease-in-out infinite;
+}
+
+.hero-wave-drift {
+  animation: heroWaveDrift 14s ease-in-out infinite;
+}
+
+.hero-node-pulse {
+  animation: heroNodePulse 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-grid-shift,
+  .hero-float-slow,
+  .hero-float-medium,
+  .hero-network-drift,
+  .hero-wave-drift,
+  .hero-node-pulse {
+    animation: none;
+  }
+}
