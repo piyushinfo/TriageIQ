@@ -108,27 +108,7 @@ function SpotlightCard({ feat, i }: { feat: any; i: number }) {
   );
 }
 
-function CustomCursor() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
-  useEffect(() => {
-    const mouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener("mousemove", mouseMove);
-    return () => window.removeEventListener("mousemove", mouseMove);
-  }, []);
-
-  return (
-    <motion.div
-      className="fixed top-0 left-0 w-8 h-8 rounded-full border border-teal-500/50 pointer-events-none z-[100] items-center justify-center mix-blend-screen hidden lg:flex shadow-[0_0_15px_rgba(20,184,166,0.3)]"
-      animate={{ x: mousePosition.x - 16, y: mousePosition.y - 16 }}
-      transition={{ type: "spring", stiffness: 400, damping: 25, mass: 0.1 }}
-    >
-      <div className="w-1.5 h-1.5 rounded-full bg-teal-400 shadow-[0_0_10px_2px_rgba(45,212,191,1)]" />
-    </motion.div>
-  );
-}
 
 export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
@@ -136,9 +116,6 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] mesh-gradient cursor-default">
-      <CustomCursor />
-      {mounted && <Scene3D variant="full" />}
-
       <div className="content-overlay">
         <Navbar />
 
